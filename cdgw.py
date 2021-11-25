@@ -105,7 +105,6 @@ def runpsi4(args):
     global ipol, exx
     global efermi
     
-    print(args['xyz'])
     # Read XYZ file
     try:
         molstr = open(args['xyz'],'r').readlines()
@@ -117,6 +116,13 @@ def runpsi4(args):
     mol = psi4.geometry("""
     {} {}
     {}""".format(args['charge'],args['mult'],''.join(molstr[2:])))
+
+    # Set MKL threading
+    try:
+        import mkl
+        mkl.set_num_threads(args['nthreads'])
+    except:
+        pass
     
     # Define Spin-polarization index (1: Unpolarized, 2: Polarized)
     ipol = 2 if args['mult'] > 1 else 1

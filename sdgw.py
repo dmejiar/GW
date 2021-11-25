@@ -116,6 +116,13 @@ def runpsi4(args):
     {} {}
     {}""".format(args['charge'],args['mult'],''.join(molstr[2:])))
     
+    # Set MKL threading
+    try:
+        import mkl
+        mkl.set_num_threads(args['nthreads'])
+    except:
+        pass
+
     # Define Spin-polarization index (1: Unpolarized, 2: Polarized)
     ipol = 2 if args['mult'] > 1 else 1
 
