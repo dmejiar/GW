@@ -245,6 +245,9 @@ def gw_pars(args):
     global lo, hi
     global ngrid, maxev
     global minres, debug
+   
+    if ipol > 1:
+        error("Open-shell case not implemented")
     
     docore = args['core']
     evgw = args['evgw']
