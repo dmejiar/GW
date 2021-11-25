@@ -260,7 +260,7 @@ def buildiw(Pai, epsilon_ai, Vqm):
     for idx in range(ngrid):
         PiPQ = buildpi(iw[idx], Pai, epsilon_ai)
         IWqm[idx] = buildw(PiPQ, qmP, Vqm)
-    #
+    
     for qp in range(nqpa):
         filename = "IWqm_qp_"+str(qp)+".npy"
         removefile(filename)
@@ -312,12 +312,15 @@ def dogw(epsilon, ai, Sigma_old, Vqm, qmP, Pai, Sigma_x, qp):
         dSigma_c = (Rnp - Rnm - Inp + Inm)/(2*fdstep)
         d2Sigma_c = (Rnp - 2*Rn + Rnm - Inp + 2*In - Inm)/fdstep**2
         #
+        print("{:10.5f}    {:10.5f}    {:10.5f}   {:10.5f}".format(Inp,Inm,Rnp,Rnm))
+        #
         Sigma_new = np.real(Sigma_c + Sigma_x)
         #
         Zn = np.real(1/(1 - dSigma_c))
         #Zn = max(Zn,0.01)
         #Zn = min(Zn,1.0)
         #
+        print(epsilon_in)
         func = epsilon[ilowa+qp] + Sigma_new - Sigma_old - epsilon_in
         dfunc = np.real(dSigma_c - 1.0)
         #
