@@ -201,7 +201,7 @@ def integrals(args):
     # Compute two-center integral matrix and perform Cholesky-decomposition
     d1 = timer()
     print("\t Two-center integrals ...               ", end="")
-    VPQ = np.array(ints_helper.ao_eri(zerobas,cdbasis,zerobas,cdbasis)).squeeze()
+    VPQ = np.array(ints_helper.ao_eri(cdbasis,zerobas,cdbasis,zerobas)).squeeze()
     VPQ = linalg.cholesky(VPQ, lower=True, check_finite=False)
     naux = len(VPQ)
     print("\t {:8.2f} seconds".format(timer()-d1))
@@ -209,7 +209,7 @@ def integrals(args):
     # Obtain 3-center integrals in AO representation
     d1 = timer()
     print("\t Three-center integrals in AO basis ... ", end="")
-    Pmn = np.array(ints_helper.ao_eri(zerobas,cdbasis,aobasis,aobasis)).squeeze()
+    Pmn = np.array(ints_helper.ao_eri(cdbasis,zerobas,aobasis,aobasis)).squeeze()
     print("\t {:8.2f} seconds".format(timer()-d1))
     
     # Transform 3-center integrals to MO representation
