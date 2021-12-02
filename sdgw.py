@@ -9,8 +9,6 @@ import numpy as np
 from math import isclose
 from copy import deepcopy as copy
 from scipy import linalg
-from scipy.sparse.linalg import LinearOperator
-from scipy.sparse.linalg import minres as MINRES
 from timeit import default_timer as timer
 
 global spdict       # Translate iangular value to a valid dft_spherical_points value
@@ -202,7 +200,12 @@ def integrals(args):
     d1 = timer()
     print("\t Two-center integrals ...               ", end="")
     VPQ = np.array(ints_helper.ao_eri(cdbasis,zerobas,cdbasis,zerobas)).squeeze()
-    VPQ = linalg.cholesky(VPQ, lower=True, check_finite=False)
+
+    # Use inverse square root instead of Cholesky
+    #VPQ = linalg.cholesky(VPQ, lower=True, check_finite=False)
+    _eigvals, VPQ = linalg.eigh(VPQ,check_finite=False)
+    _eigvals = np.where(_eigvals <= 0.0, 0.0, 1.0/np.sqrt(_eigvals))
+    VPQ = np.einsum('PQ,Q,RQ->PR',VPQ,_eigvals,VPQ,optimize=True)
     naux = len(VPQ)
     print("\t {:8.2f} seconds".format(timer()-d1))
     
@@ -222,10 +225,12 @@ def integrals(args):
     print("\t {:8.2f} seconds".format(timer()-d1))
     
     # Orthonormalize cdbasis with the Cholesky factors
+    # Use square-root inverse instead of Cholesky
     d1 = timer()
     print("\t Orthonormalize charge-density basis ... ", end="")
     for ispin in range(ipol):
-        Prs[ispin] = linalg.solve_triangular(VPQ, Prs[ispin], lower=True, check_finite=False)
+        #Prs[ispin] = linalg.solve_triangular(VPQ, Prs[ispin], lower=True, check_finite=False)
+        Prs[ispin] = np.einsum('PQ,Qrs->Prs',VPQ,Prs[ispin],optimize=True)
     
     # Pointer to Occ-Vir block
     Pia = []
@@ -372,19 +377,26 @@ def scissor(old,new,noqp,nvqp,nomo,ilow,iupp,spin):
 
     
 def getxm(_Pia, wia):
+    RPA = 4.0*np.einsum('Pia,Pjb->iajb',_Pia,_Pia,optimize=True)
+    d = np.einsum('iaia->ia',RPA)
+    d += wia
+    AmB = np.sqrt(wia)
+    RPA = np.einsum('ia,iajb,jb->iajb',AmB,RPA,AmB,optimize=True)
+
+    # The reshape is necessary for the eigensolver
+    # Note: using Davidson would be impractical because we need the full spectrum
     s1 = _Pia.shape[1]
     s2 = _Pia.shape[2]
-    size = s1*s2
-    RPA = 4.0*np.einsum('Pia,Pjb->iajb',_Pia,_Pia,optimize=True).reshape((size,size))
-    d = np.einsum('ii->i',RPA)
-    d += wia.reshape(size)
-    AmB = np.sqrt(wia.reshape(size))
-    RPA = np.einsum('i,ij,j->ij',AmB,RPA,AmB,optimize=True)
-    Omega, RPA = linalg.eigh(RPA, check_finite=False)
+    Omega, RPA = linalg.eigh(RPA.reshape(s1*s2,s1*s2), check_finite=False)
+
+    # We have to go back to the original shape for the rest of the code
+    Omega = Omega.reshape((s1,s2))
+    RPA = RPA.reshape((s1,s2,s1,s2))
+
     Omega = np.sqrt(Omega)
-    XPY = np.einsum("i,ij,j->ij",AmB,RPA,1.0/np.sqrt(Omega),optimize=True)
-    Qs = np.einsum('Pi,ij->Pj',_Pia.reshape((naux,size)),XPY,optimize=True)
-    return Qs.reshape((naux,s1,s2)), Omega.reshape((s1,s2))
+    XPY = np.einsum("ia,iajb,jb->iajb",AmB,RPA,1.0/np.sqrt(Omega),optimize=True)
+    Qs = np.einsum('Pia,iajb->Pjb',_Pia,XPY,optimize=True)
+    return Qs, Omega
 
 
 def getwmn(_Prs, Qs, iqp):
@@ -537,7 +549,7 @@ if __name__ == '__main__':
                                                         
                         residual = _sigmac - _ein + constant
                         dresidual = _dsigmac - 1.0
-                        
+                       
                         values[inewton] = _ein
                         errors[inewton] = residual
                         
