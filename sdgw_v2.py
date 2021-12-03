@@ -212,7 +212,10 @@ def integrals(args):
     # Obtain 3-center integrals in AO representation
     d1 = timer()
     print("\t Three-center integrals in AO basis ... ", end="")
-    Pmn = np.array(ints_helper.ao_eri(cdbasis,zerobas,aobasis,aobasis)).squeeze()
+
+    # Could not get integrals directly in (nao,nao,naux) shape, so
+    # I'm transposing the array here
+    Pmn = np.array(ints_helper.ao_eri(cdbasis,zerobas,aobasis,aobasis)).squeeze().T
     print("\t {:8.2f} seconds".format(timer()-d1))
     
     # Transform 3-center integrals to MO representation
@@ -220,36 +223,31 @@ def integrals(args):
     print("\t Three-center integrals in MO basis ... ", end="")
 
     # Compute separetely Occ-Occ, Occ-Vir, and Vir-Vir blocks
-    Poo = [np.einsum('Pmn,mi,nj->Pij',Pmn,movecs[0][:,:nocc[0]],movecs[0][:,:nocc[0]],optimize=True)]
-    Pov = [np.einsum('Pmn,mi,na->Pia',Pmn,movecs[0][:,:nocc[0]],movecs[0][:,nocc[0]:],optimize=True)]
-    Pvv = [None, None]
-    if hi[0] > nocc[0]:
-        Pvv[0] = np.einsum('Pmn,ma,nb->Pab',Pmn,movecs[0][:,nocc[0]:hi[0]],movecs[0][:,nocc[0]:],optimize=True)
+    Poo = []; Pov = []; Pvv = []
+    for ispin in range(ipol):
+        Poo.append(np.einsum('mnP,mi,nj->ijP',Pmn,movecs[ispin][:,:nocc[ispin]],movecs[ispin][:,:nocc[ispin]],optimize=True))
 
-    if ipol > 1:
-        Poo.append(np.einsum('Pmn,mi,nj->Pij',Pmn,movecs[1][:,:nocc[1]],movecs[1][:,:nocc[1]],optimize=True))
-        Pov.append(np.einsum('Pmn,mi,na->Pia',Pmn,movecs[1][:,:nocc[1]],movecs[1][:,nocc[1]:],optimize=True))
-        if hi[1] > nocc[1]:
-            Pvv[1] = np.einsum('Pmn,ma,nb->Pab',Pmn,movecs[1][:,nocc[1]:hi[1]],movecs[1][:,nocc[1]:],optimize=True)
+        # einsum was not returning a contiguous array, so I split the transformation of the integral block
+        Pov.append(np.zeros((nocc[ispin]*nvir[ispin],naux)))
+        for imo in range(nocc[ispin]):
+            temp = np.einsum('mnP,m->nP',Pmn,movecs[ispin][:,imo])
+            Pov[ispin][imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin],:] = np.einsum('nP,na->aP',temp,movecs[ispin][:,nocc[ispin]:])
+
+        if hi[ispin] > nocc[ispin]:
+            Pvv.append(np.einsum('mnP,ma,nb->abP',Pmn,movecs[ispin][:,nocc[ispin]:hi[ispin]],movecs[ispin][:,nocc[ispin]:],optimize=True))
     print("\t {:8.2f} seconds".format(timer()-d1))
-    
+
     # Orthonormalize cdbasis with the Cholesky factors
     # Use square-root inverse instead of Cholesky
     d1 = timer()
     print("\t Orthonormalize charge-density basis ... ", end="")
     for ispin in range(ipol):
-        Poo[ispin] = np.einsum('PQ,Qij->Pij',VPQ,Poo[ispin],optimize=True)
-        Pov[ispin] = np.einsum('PQ,Qia->Pia',VPQ,Pov[ispin],optimize=True)
+        Poo[ispin] = np.einsum('PQ,ijQ->ijP',VPQ,Poo[ispin],optimize=True)
+        Pov[ispin] = np.einsum('PQ,sQ->sP',VPQ,Pov[ispin],optimize=True)
         if hi[ispin] > nocc[ispin]:
-            Pvv[ispin] = np.einsum('PQ,Qab->Pab',VPQ,Pvv[ispin],optimize=True)
-
-    
-    # Modify Occ-Vir shape
-    for ispin in range(ipol):
-        Pov[ispin].shape = (naux,nocc[ispin]*nvir[ispin])
-
+            Pvv[ispin] = np.einsum('PQ,abQ->abP',VPQ,Pvv[ispin],optimize=True)
     print("\t {:8.2f} seconds".format(timer()-d1))
-    
+  
     del VPQ, Pmn
     
     return
@@ -386,7 +384,7 @@ def scissor(old,new,noqp,nvqp,nomo,ilow,iupp,spin):
 
     
 def getxm(_Pov, wia):
-    RPA = 4.0*np.einsum('Pr,Ps->rs',_Pov,_Pov,optimize=True)
+    RPA = 4.0*np.einsum('rP,sP->rs',_Pov,_Pov,optimize=True)
     d = np.einsum('ss->s',RPA)
     d += wia
     AmB = np.sqrt(wia)
@@ -394,19 +392,19 @@ def getxm(_Pov, wia):
     Omega, RPA = linalg.eigh(RPA, check_finite=False)
     Omega = np.sqrt(Omega)
     XPY = np.einsum("r,rs,s->rs",AmB,RPA,1.0/np.sqrt(Omega),optimize=True)
-    Qs = np.einsum('Pr,rs->Ps',_Pov,XPY,optimize=True)
+    Qs = np.einsum('rP,rs->sP',_Pov,XPY,optimize=True)
     return Qs, Omega
 
 
 def getwmn(_Poo, _Pov, _Pvv, Qs, imo, ispin):
     wmn = np.zeros((nmo,nocc[ispin]*nvir[ispin]))
     if imo < nocc[ispin]:
-        wmn[:nocc[ispin]] = np.einsum('Pi,Ps->is',_Poo[:,imo,:],Qs,optimize=True)
-        wmn[nocc[ispin]:] = np.einsum('Pa,Ps->as',_Pov[:,imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],Qs,optimize=True)
+        wmn[:nocc[ispin]] = np.einsum('iP,sP->is',_Poo[imo],Qs,optimize=True)
+        wmn[nocc[ispin]:] = np.einsum('aP,sP->as',_Pov[imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],Qs,optimize=True)
     else:
-        wmn[nocc[ispin]:] = np.einsum('Pa,Ps->as',_Pvv[:,imo-nocc[ispin],:],Qs,optimize=True)
+        wmn[nocc[ispin]:] = np.einsum('aP,sP->as',_Pvv[imo-nocc[ispin]],Qs,optimize=True)
         for jmo in range(nocc[ispin]):
-            wmn[jmo] = np.einsum('P,Ps->s',_Pov[:,jmo*nvir[ispin]+imo-nocc[ispin]],Qs,optimize=True)
+            wmn[jmo] = np.einsum('P,sP->s',_Pov[jmo*nvir[ispin]+imo-nocc[ispin]],Qs,optimize=True)
 
     wmn = 2.0*np.einsum('ns,ns->ns',wmn,wmn,optimize=True)
     return wmn
@@ -450,14 +448,14 @@ if __name__ == '__main__':
     Vmn = [None, None]
     for ispin in range(ipol):
         Vmn[ispin] = np.zeros((hi[ispin],nmo))
-        Vmn[ispin][:nocc[ispin],:nocc[ispin]] = np.einsum('Pij,Pij->ij',Poo[ispin],Poo[ispin],optimize=True)
+        Vmn[ispin][:nocc[ispin],:nocc[ispin]] = np.einsum('ijP,ijP->ij',Poo[ispin],Poo[ispin],optimize=True)
         for imo in range(nocc[ispin]):
-            Vmn[ispin][imo][nocc[ispin]:] = np.einsum('Pa,Pa->a',Pov[ispin][:,imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],
-                    Pov[ispin][:,imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],optimize=True)
+            Vmn[ispin][imo][nocc[ispin]:] = np.einsum('aP,aP->a',Pov[ispin][imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],
+                    Pov[ispin][imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],optimize=True)
         if hi[ispin] > nocc[ispin]:
             for imo in range(nocc[ispin]):
                 Vmn[ispin][nocc[ispin]:,imo] = Vmn[ispin][imo,nocc[ispin]:hi[ispin]]
-            Vmn[ispin][nocc[ispin]:,nocc[ispin]:] = np.einsum('Pab,Pab->ab',Pvv[ispin],Pvv[ispin],optimize=True)
+            Vmn[ispin][nocc[ispin]:,nocc[ispin]:] = np.einsum('abP,abP->ab',Pvv[ispin],Pvv[ispin],optimize=True)
 
     # Sigma_x
     Sigmax = [-np.einsum('ij->i',Vmn[0][lo[0]:hi[0],:nocc[0]])]
