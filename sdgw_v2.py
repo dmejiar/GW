@@ -235,6 +235,8 @@ def integrals(args):
 
         if hi[ispin] > nocc[ispin]:
             Pvv.append(np.einsum('mnP,ma,nb->abP',Pmn,movecs[ispin][:,nocc[ispin]:hi[ispin]],movecs[ispin][:,nocc[ispin]:],optimize=True))
+        else:
+            Pvv.append(None)
     print("\t {:8.2f} seconds".format(timer()-d1))
 
     # Orthonormalize cdbasis with the Cholesky factors
@@ -265,9 +267,6 @@ def gw_pars(args):
     global ngrid, maxev
     global minres, debug
    
-    if ipol > 1:
-        error("Open-shell case not implemented")
-    
     docore = args['core']
     evgw = args['evgw']
     evgw0 = args['evgw0']
@@ -384,20 +383,38 @@ def scissor(old,new,noqp,nvqp,nomo,ilow,iupp,spin):
 
     
 def getxm(_Pov, wia):
-    RPA = 4.0*np.einsum('rP,sP->rs',_Pov,_Pov,optimize=True)
+    if ipol==1:
+        RPA = 4.0*np.einsum('rP,sP->rs',_Pov[0],_Pov[0],optimize=True)
+        wall = wia[0]
+    else:
+        ndim0 = nocc[0]*nvir[0]
+        ndim1 = nocc[1]*nvir[1]
+        RPA = np.zeros((ndim0+ndim1,ndim0+ndim1))
+        RPA[:ndim0,:ndim0] = 2.0*np.einsum('rP,sP->rs',_Pov[0],_Pov[0],optimize=True)
+        RPA[ndim0:,ndim0:] = 2.0*np.einsum('rP,sP->rs',_Pov[1],_Pov[1],optimize=True)
+        RPA[:ndim0,ndim0:] = 2.0*np.einsum('rP,sP->rs',_Pov[0],_Pov[1],optimize=True)
+        RPA[ndim0:,:ndim0] = 2.0*np.einsum('rP,sP->rs',_Pov[1],_Pov[0],optimize=True)
+        wall = np.concatenate((wia[0],wia[1]))
     d = np.einsum('ss->s',RPA)
-    d += wia
-    AmB = np.sqrt(wia)
+    d += wall
+    AmB = np.sqrt(wall)
     RPA = np.einsum('r,rs,s->rs',AmB,RPA,AmB,optimize=True)
     Omega, RPA = linalg.eigh(RPA, check_finite=False)
     Omega = np.sqrt(Omega)
     XPY = np.einsum("r,rs,s->rs",AmB,RPA,1.0/np.sqrt(Omega),optimize=True)
-    Qs = np.einsum('rP,rs->sP',_Pov,XPY,optimize=True)
+ 
+    if ipol==1:
+        Qs = np.einsum('rP,rs->sP',_Pov[0],XPY,optimize=True)
+    else:
+        Qs = np.einsum('rP,rs->sP',_Pov[0],XPY[:ndim0],optimize=True)
+        Qs += np.einsum('rP,rs->sP',_Pov[1],XPY[ndim0:],optimize=True)
     return Qs, Omega
 
 
 def getwmn(_Poo, _Pov, _Pvv, Qs, imo, ispin):
-    wmn = np.zeros((nmo,nocc[ispin]*nvir[ispin]))
+    dim = nocc[0]*nvir[0]
+    dim += nocc[1]*nvir[1] if ipol > 1 else 0
+    wmn = np.zeros((nmo,dim))
     if imo < nocc[ispin]:
         wmn[:nocc[ispin]] = np.einsum('iP,sP->is',_Poo[imo],Qs,optimize=True)
         wmn[nocc[ispin]:] = np.einsum('aP,sP->as',_Pov[imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin]],Qs,optimize=True)
@@ -405,8 +422,8 @@ def getwmn(_Poo, _Pov, _Pvv, Qs, imo, ispin):
         wmn[nocc[ispin]:] = np.einsum('aP,sP->as',_Pvv[imo-nocc[ispin]],Qs,optimize=True)
         for jmo in range(nocc[ispin]):
             wmn[jmo] = np.einsum('P,sP->s',_Pov[jmo*nvir[ispin]+imo-nocc[ispin]],Qs,optimize=True)
-
-    wmn = 2.0*np.einsum('ns,ns->ns',wmn,wmn,optimize=True)
+    factor = 2.0 if ipol==1 else 1.0
+    wmn = factor*np.einsum('ns,ns->ns',wmn,wmn,optimize=True)
     return wmn
 
 def getsigmac(wmn, Omega, omega, vals):
@@ -488,7 +505,7 @@ if __name__ == '__main__':
             
         # Calculate RPA Polarizability
         if eviter == 0 or evgw:
-            Qs, Omega = getxm(Pov[0],wia[0])
+            Qs, Omega = getxm(Pov,wia)
         
         # Loop over spin channels
         for ispin in range(ipol):
