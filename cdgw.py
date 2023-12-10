@@ -316,7 +316,7 @@ def print_iter(inewton,ein,eout,lower,upper,bracket):
     print("\t Iter: {} Ein: {:12.6f} Eout: {:12.6f}".format(inewton,ein*ha2ev,eout*ha2ev))
     print("\t          Res: {:12.6f} Step: {:12.6f}".format(ha2ev*residual,ha2ev*(eout-ein)),end="")
     if bracket:
-        print(" lower: {:12.6f} upper: {:12.6f}".format(ha2ev*elower,ha2ev*eupper))
+        print(" lower: {:12.6f} upper: {:12.6f}".format(ha2ev*lower,ha2ev*upper))
     else:
         print("")
     return
@@ -462,7 +462,7 @@ def compute_I(omega,vals,iWmn,iqp):
     _i = 0.0; _di = 0.0
     temp = omega - vals
     for igl in range(ngrid):
-        factor = 1.0/(temp + 1j*glx[igl])
+        factor = np.where( np.abs(temp) > 1.0E-4, 1.0/(temp + 1j*glx[igl]), 0.0 )
         _i  -= glw[igl]*np.einsum('i,i->',factor,iWmn[igl,iqp])
         _di += glw[igl]*np.einsum('i,i,i->',factor,factor,iWmn[igl,iqp])
     return _i.real, _di.real
@@ -716,7 +716,7 @@ if __name__ == '__main__':
                         
                         residual = _sigmac - _ein + constant
                         dresidual = _dsigmac - 1.0
-                        
+
                         values[inewton] = _ein
                         errors[inewton] = residual
                         

@@ -85,6 +85,7 @@ def parser():
     pars.add_argument("--mult", help="Multiplicity of the system", type=int, default=1)
     pars.add_argument("--charge", help="Charge of the system", type=int, default=0)
     pars.add_argument("--debug", help="Print debug information", action="store_true")
+    pars.add_argument("--bse", action="store_true")
     return vars(pars.parse_args())
 
 
@@ -233,8 +234,9 @@ def integrals(args):
             temp = np.einsum('mnP,m->nP',Pmn,movecs[ispin][:,imo])
             Pov[ispin][imo*nvir[ispin]:imo*nvir[ispin]+nvir[ispin],:] = np.einsum('nP,na->aP',temp,movecs[ispin][:,nocc[ispin]:])
 
-        if hi[ispin] > nocc[ispin]:
-            Pvv.append(np.einsum('mnP,ma,nb->abP',Pmn,movecs[ispin][:,nocc[ispin]:hi[ispin]],movecs[ispin][:,nocc[ispin]:],optimize=True))
+        if hi[ispin] > nocc[ispin] or args['bse']:
+            _hi = nmo if args['bse'] else hi[ispin]
+            Pvv.append(np.einsum('mnP,ma,nb->abP',Pmn,movecs[ispin][:,nocc[ispin]:_hi],movecs[ispin][:,nocc[ispin]:],optimize=True))
         else:
             Pvv.append(None)
     print("\t {:8.2f} seconds".format(timer()-d1))
@@ -246,7 +248,7 @@ def integrals(args):
     for ispin in range(ipol):
         Poo[ispin] = np.einsum('PQ,ijQ->ijP',VPQ,Poo[ispin],optimize=True)
         Pov[ispin] = np.einsum('PQ,sQ->sP',VPQ,Pov[ispin],optimize=True)
-        if hi[ispin] > nocc[ispin]:
+        if hi[ispin] > nocc[ispin] or args['bse']:
             Pvv[ispin] = np.einsum('PQ,abQ->abP',VPQ,Pvv[ispin],optimize=True)
     print("\t {:8.2f} seconds".format(timer()-d1))
   
@@ -472,7 +474,7 @@ if __name__ == '__main__':
         if hi[ispin] > nocc[ispin]:
             for imo in range(nocc[ispin]):
                 Vmn[ispin][nocc[ispin]:,imo] = Vmn[ispin][imo,nocc[ispin]:hi[ispin]]
-            Vmn[ispin][nocc[ispin]:,nocc[ispin]:] = np.einsum('abP,abP->ab',Pvv[ispin],Pvv[ispin],optimize=True)
+            Vmn[ispin][nocc[ispin]:,nocc[ispin]:] = np.einsum('abP,abP->ab',Pvv[ispin][:hi[ispin]-nocc[ispin]],Pvv[ispin][:hi[ispin]-nocc[ispin]],optimize=True)
 
     # Sigma_x
     Sigmax = [-np.einsum('ij->i',Vmn[0][lo[0]:hi[0],:nocc[0]])]
@@ -695,12 +697,48 @@ if __name__ == '__main__':
                 print("\n\t *** Result did not converge\n")
 
         # Apply scissor shift for evGW and evGW_0 calculations
-        if evgw or evgw0:
+        if evgw or evgw0 or args['bse']:
             scissor(oldevals[0],newevals[0],noqp[0],nvqp[0],nocc[0],lo[0],hi[0],'Alpha')
             if ipol > 1:
                 scissor(oldevals[1],newevals[1],noqp[1],nvqp[1],nocc[1],lo[1],hi[1],'Beta')
         
-    print("\t Done! ")
+    print("\t GW iteration Done! ")
+
+    if args['bse']:
+        print("\t Starting BSE Calculation")
+
+        # Obtain v*chi*v
+        XPQ = -4.0*np.einsum('sP,s,sQ->PQ',Qs,1.0/Omega,Qs,optimize=True) + np.eye(naux)
+
+        # Qs is no longer needed
+        del(Qs)
+
+        # Calculate current eigenvalue differences
+        for ispin in range(ipol):
+            wia[ispin] = np.array( [ea-ei for ei in newevals[ispin][:nocc[ispin]] for ea in newevals[ispin][nocc[ispin]:]])
+        
+
+        # Setup BSE Hamiltonian
+        dim = nocc[0]*nvir[0]
+        ApB = np.diag(wia[0]) + 4.0*np.einsum('rP,sP->rs',Pov[0],Pov[0],optimize=True)
+        AmB = np.diag(wia[0])
+        temp = np.einsum('ijP,PQ,abQ->iajb',Poo[0],XPQ,Pvv[0],optimize=True).reshape((dim,dim))
+        ApB -= temp
+        AmB -= temp
+        temp = np.einsum('rP,PQ,sQ->rs',Pov[0],XPQ,Pov[0],optimize=True)
+        ApB -= temp
+        AmB += temp
+
+        AmB = linalg.cholesky(AmB,lower=True,check_finite=False)
+        ApB = np.einsum('rs,rp,pq->sq',AmB,ApB,AmB,optimize=True)
+
+        Omega, ApB = linalg.eig(ApB, check_finite=False)
+        Omega = np.sqrt(Omega)
+
+        print(ha2ev*np.sort(np.abs(np.real(Omega)))[:20])
+
+
+
     
 
     

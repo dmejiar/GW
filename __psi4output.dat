@@ -1,0 +1,281 @@
+
+  Memory set to 953.674 MiB by Python driver.
+
+Scratch directory: /tmp/
+
+*** tstart() called on WE41476
+*** at Sat Dec  4 01:29:28 2021
+
+   => Loading Basis Set <=
+
+    Name: AUG-CC-PVDZ
+    Role: ORBITAL
+    Keyword: BASIS
+    atoms 1-2 entry C          line   182 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz.gbs 
+    atoms 3-6 entry H          line    40 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz.gbs 
+
+
+         ---------------------------------------------------------
+                                   SCF
+               by Justin Turney, Rob Parrish, Andy Simmonett
+                          and Daniel G. A. Smith
+                              RKS Reference
+                        4 Threads,    953 MiB Core
+         ---------------------------------------------------------
+
+  ==> Geometry <==
+
+    Molecular point group: c1
+    Full point group: D2h
+
+    Geometry (in Angstrom), charge = 0, multiplicity = 1:
+
+       Center              X                  Y                   Z               Mass       
+    ------------   -----------------  -----------------  -----------------  -----------------
+         C            0.000000000000     0.000000000000     0.668188000000    12.000000000000
+         C            0.000000000000     0.000000000000    -0.668188000000    12.000000000000
+         H            0.000000000000     0.923274000000     1.238289000000     1.007825032230
+         H            0.000000000000    -0.923274000000     1.238289000000     1.007825032230
+         H            0.000000000000     0.923274000000    -1.238289000000     1.007825032230
+         H            0.000000000000    -0.923274000000    -1.238289000000     1.007825032230
+
+  Running in c1 symmetry.
+
+  Rotational constants: A =      4.90558  B =      0.99768  C =      0.82907 [cm^-1]
+  Rotational constants: A = 147065.51749  B =  29909.67979  C =  24854.79663 [MHz]
+  Nuclear repulsion =   33.298097793168203
+
+  Charge       = 0
+  Multiplicity = 1
+  Electrons    = 16
+  Nalpha       = 8
+  Nbeta        = 8
+
+  ==> Algorithm <==
+
+  SCF Algorithm Type is DF.
+  DIIS enabled.
+  MOM disabled.
+  Fractional occupation disabled.
+  Guess Type is SAD.
+  Energy threshold   = 1.00e-07
+  Density threshold  = 1.00e-06
+  Integral threshold = 1.00e-12
+
+  ==> Primary Basis <==
+
+  Basis Set: AUG-CC-PVDZ
+    Blend: AUG-CC-PVDZ
+    Number of shells: 38
+    Number of basis functions: 82
+    Number of Cartesian functions: 86
+    Spherical Harmonics?: true
+    Max angular momentum: 2
+
+  ==> DFT Potential <==
+
+   => Composite Functional: PBE <= 
+
+    PBE GGA Exchange-Correlation Functional
+
+    J.P. Perdew et. al., Phys. Rev. Lett., 77(18), 3865-3868, 1996
+
+
+    Deriv               =              1
+    GGA                 =           TRUE
+    Meta                =          FALSE
+
+    Exchange Hybrid     =          FALSE
+    MP2 Hybrid          =          FALSE
+
+   => Exchange Functionals <=
+
+    1.0000     XC_GGA_X_PBE
+
+   => Correlation Functionals <=
+
+    1.0000     XC_GGA_C_PBE
+
+   => LibXC Density Thresholds  <==
+
+    XC_GGA_C_PBE:  1.00E-12 
+    XC_GGA_X_PBE:  1.00E-15 
+
+   => Molecular Quadrature <=
+
+    Radial Scheme          =       TREUTLER
+    Pruning Scheme         =           NONE
+    Nuclear Scheme         =       TREUTLER
+
+    BS radius alpha        =              1
+    Pruning alpha          =              1
+    Radial Points          =            100
+    Spherical Points       =            266
+    Total Points           =         154310
+    Total Blocks           =           1214
+    Max Points             =            256
+    Max Functions          =             82
+    Weights Tolerance      =       1.00E-15
+
+   => Loading Basis Set <=
+
+    Name: (AUG-CC-PVDZ AUX)
+    Role: JKFIT
+    Keyword: DF_BASIS_SCF
+    atoms 1-2 entry C          line   154 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz-jkfit.gbs 
+    atoms 3-6 entry H          line    70 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz-jkfit.gbs 
+
+  ==> Integral Setup <==
+
+  DFHelper Memory: AOs need 0.017 GiB; user supplied 0.332 GiB. Using in-core AOs.
+
+  ==> MemDFJK: Density-Fitted J/K Matrices <==
+
+    J tasked:                   Yes
+    K tasked:                    No
+    wK tasked:                   No
+    OpenMP threads:               4
+    Memory [MiB]:               340
+    Algorithm:                 Core
+    Schwarz Cutoff:           1E-12
+    Mask sparsity (%):       0.0000
+    Fitting Condition:        1E-10
+
+   => Auxiliary Basis Set <=
+
+  Basis Set: (AUG-CC-PVDZ AUX)
+    Blend: AUG-CC-PVDZ-JKFIT
+    Number of shells: 104
+    Number of basis functions: 300
+    Number of Cartesian functions: 342
+    Spherical Harmonics?: true
+    Max angular momentum: 3
+
+  Cached 100.0% of DFT collocation blocks in 0.366 [GiB].
+
+  Minimum eigenvalue in the overlap matrix is 1.0934795865E-04.
+  Reciprocal condition number of the overlap matrix is 1.1870289428E-05.
+    Using symmetric orthogonalization.
+
+  ==> Pre-Iterations <==
+
+  SCF Guess: Superposition of Atomic Densities via on-the-fly atomic UHF (no occupation information).
+
+   -------------------------
+    Irrep   Nso     Nmo    
+   -------------------------
+     A         82      82 
+   -------------------------
+    Total      82      82
+   -------------------------
+
+  ==> Iterations <==
+
+                           Total Energy        Delta E     RMS |[F,P]|
+
+   @DF-RKS iter SAD:   -77.87905171328393   -7.78791e+01   0.00000e+00 
+   @DF-RKS iter   1:   -78.10270331145117   -2.23652e-01   9.67387e-03 DIIS
+   @DF-RKS iter   2:   -77.49303095700620    6.09672e-01   1.49480e-02 DIIS
+   @DF-RKS iter   3:   -78.47536502104055   -9.82334e-01   6.74966e-04 DIIS
+   @DF-RKS iter   4:   -78.47744596182216   -2.08094e-03   1.27270e-04 DIIS
+   @DF-RKS iter   5:   -78.47750501824703   -5.90564e-05   2.03044e-05 DIIS
+   @DF-RKS iter   6:   -78.47750665951423   -1.64127e-06   4.53886e-07 DIIS
+   @DF-RKS iter   7:   -78.47750666031601   -8.01776e-10   6.37371e-08 DIIS
+  Energy and wave function converged.
+
+
+  ==> Post-Iterations <==
+
+   Electrons on quadrature grid:
+      Ntotal   =   15.9999581735 ; deviation = -4.183e-05 
+
+    Orbital Energies [Eh]
+    ---------------------
+
+    Doubly Occupied:                                                      
+
+       1A     -9.898932     2A     -9.898329     3A     -0.691902  
+       4A     -0.524741     5A     -0.420879     6A     -0.373828  
+       7A     -0.313032     8A     -0.247187  
+
+    Virtual:                                                              
+
+       9A     -0.039918    10A     -0.008807    11A      0.010113  
+      12A      0.012998    13A      0.047963    14A      0.052478  
+      15A      0.067853    16A      0.099670    17A      0.102293  
+      18A      0.107967    19A      0.111442    20A      0.120321  
+      21A      0.143085    22A      0.145285    23A      0.153533  
+      24A      0.196046    25A      0.207940    26A      0.279609  
+      27A      0.281529    28A      0.282196    29A      0.308779  
+      30A      0.326200    31A      0.348012    32A      0.390979  
+      33A      0.403971    34A      0.413215    35A      0.423430  
+      36A      0.449806    37A      0.459432    38A      0.462232  
+      39A      0.464589    40A      0.469847    41A      0.496863  
+      42A      0.501969    43A      0.517065    44A      0.551718  
+      45A      0.577456    46A      0.633486    47A      0.644792  
+      48A      0.662968    49A      0.676406    50A      0.752382  
+      51A      0.832536    52A      0.931397    53A      0.957847  
+      54A      1.030012    55A      1.184593    56A      1.197485  
+      57A      1.212735    58A      1.228958    59A      1.357617  
+      60A      1.418770    61A      1.476720    62A      1.497413  
+      63A      1.529361    64A      1.548461    65A      1.633720  
+      66A      1.699401    67A      1.740200    68A      1.752543  
+      69A      1.793929    70A      1.804244    71A      1.807965  
+      72A      1.810542    73A      2.033011    74A      2.082234  
+      75A      2.118629    76A      2.257233    77A      2.305187  
+      78A      2.418266    79A      2.418984    80A      2.474727  
+      81A      3.010284    82A      3.054163  
+
+    Final Occupation by Irrep:
+              A 
+    DOCC [     8 ]
+
+  @DF-RKS Final Energy:   -78.47750666031601
+
+   => Energetics <=
+
+    Nuclear Repulsion Energy =             33.2980977931682034
+    One-Electron Energy =                -170.1062194340237568
+    Two-Electron Energy =                  70.4967098246667518
+    DFT Exchange-Correlation Energy =     -12.1660948441272119
+    Empirical Dispersion Energy =           0.0000000000000000
+    VV10 Nonlocal Energy =                  0.0000000000000000
+    Total Energy =                        -78.4775066603160099
+
+Computation Completed
+
+
+Properties will be evaluated at   0.000000,   0.000000,   0.000000 [a0]
+
+Properties computed using the SCF density matrix
+
+  Nuclear Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:     0.0000
+
+  Electronic Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:    -0.0000
+
+  Dipole Moment: [e a0]
+     X:     0.0000      Y:     0.0000      Z:    -0.0000     Total:     0.0000
+
+  Dipole Moment: [D]
+     X:     0.0000      Y:     0.0000      Z:    -0.0000     Total:     0.0000
+
+
+*** tstop() called on WE41476 at Sat Dec  4 01:29:30 2021
+Module time:
+	user time   =       5.05 seconds =       0.08 minutes
+	system time =       0.32 seconds =       0.01 minutes
+	total time  =          2 seconds =       0.03 minutes
+Total time:
+	user time   =       5.05 seconds =       0.08 minutes
+	system time =       0.32 seconds =       0.01 minutes
+	total time  =          2 seconds =       0.03 minutes
+   => Loading Basis Set <=
+
+    Name: AUG-CC-PVDZ-RI
+    Role: ORBITAL
+    Keyword: DF_BASIS_SCF
+    atoms 1-2 entry C          line   112 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz-ri.gbs 
+    atoms 3-6 entry H          line    30 file /Users/meji656/.conda/envs/p4env/share/psi4/basis/aug-cc-pvdz-ri.gbs 
+
